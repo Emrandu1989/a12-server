@@ -32,6 +32,7 @@ async function run() {
       
      const userCollection = client.db("machineDb").collection("users");
      const serviceCollection = client.db("machineDb").collection("services")
+     const workSheetCollection = client.db("wordSheetDb").collection("workSheet")
 
     //  users related api
      app.post('/users', async(req, res)=>{
@@ -46,6 +47,18 @@ async function run() {
         const result = await serviceCollection.find().toArray();
         res.send(result)
      })
+
+
+    //  Dashboard related api
+      app.post('/workSheet', async(req, res)=>{
+          const data = req.body;
+          const result = await workSheetCollection.insertOne(data);
+          res.send(result)
+      })
+      app.get('/workSheet', async(req, res)=>{
+          const result = await workSheetCollection.find().toArray();
+          res.send(result)
+      })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
