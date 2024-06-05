@@ -41,6 +41,11 @@ async function run() {
         res.send(result) 
      })
 
+     app.get('/allEmployee', async(req, res)=>{
+         const result = await userCollection.find().toArray();
+         res.send(result);
+     })
+
 
     //  service Related api
      app.get('/services', async(req, res)=>{
