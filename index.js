@@ -29,48 +29,54 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
-      
-     const userCollection = client.db("machineDb").collection("users");
-     const serviceCollection = client.db("machineDb").collection("services")
-     const workSheetCollection = client.db("wordSheetDb").collection("workSheet")
+
+    const userCollection = client.db("machineDb").collection("users");
+    const serviceCollection = client.db("machineDb").collection("services")
+    const workSheetCollection = client.db("wordSheetDb").collection("workSheet")
 
     //  users related api
-     app.post('/users', async(req, res)=>{
-        const user = req.body;
-        const result = await userCollection.insertOne(user);
-        res.send(result) 
-     })
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const result = await userCollection.insertOne(user);
+      res.send(result)
+    })
 
-     app.get('/allEmployee', async(req, res)=>{
-         const result = await userCollection.find().toArray();
-         res.send(result);
-     })
+    app.get('/allEmployee', async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    })
 
-     app.get('/allEmployee/:id', async(req, res)=>{
-        const id = req.params.id;
-        const query = {_id: new ObjectId(id)};
-        const result = await userCollection.findOne(query);
-        res.send(result)
-     })
+    app.get('/allEmployee/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.findOne(query);
+      res.send(result)
+    })
+
+    app.get('/allEmployees/:email', async (req, res) => {
+      const email = req.params.email;
+      const result = await userCollection.findOne({ email });
+      res.send(result);
+    });
 
 
     //  service Related api
-     app.get('/services', async(req, res)=>{
-        const result = await serviceCollection.find().toArray();
-        res.send(result)
-     })
+    app.get('/services', async (req, res) => {
+      const result = await serviceCollection.find().toArray();
+      res.send(result)
+    })
 
 
     //  Dashboard related api
-      app.post('/workSheet', async(req, res)=>{
-          const data = req.body;
-          const result = await workSheetCollection.insertOne(data);
-          res.send(result)
-      })
-      app.get('/workSheet', async(req, res)=>{
-          const result = await workSheetCollection.find().toArray();
-          res.send(result)
-      })
+    app.post('/workSheet', async (req, res) => {
+      const data = req.body;
+      const result = await workSheetCollection.insertOne(data);
+      res.send(result)
+    })
+    app.get('/workSheet', async (req, res) => {
+      const result = await workSheetCollection.find().toArray();
+      res.send(result)
+    })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -91,10 +97,10 @@ run().catch(console.dir);
 
 
 
-app.get('/', (req, res)=>{
-     res.send('Machine world is Running');
+app.get('/', (req, res) => {
+  res.send('Machine world is Running');
 })
 
-app.listen(port, ()=>{
-    console.log(`Machine World server is Running on Port ${port}`)
+app.listen(port, () => {
+  console.log(`Machine World server is Running on Port ${port}`)
 })
