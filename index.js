@@ -9,11 +9,6 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-
-
-
-
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ff4sini.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -31,27 +26,27 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("machineDb").collection("users");
-    const serviceCollection = client.db("machineDb").collection("services")
-    const workSheetCollection = client.db("wordSheetDb").collection("workSheet")
+    const serviceCollection = client.db("machineDb").collection("services");
+    const workSheetCollection = client.db("wordSheetDb").collection("workSheet");
 
-    //  users related api
+    // Users related API
     app.post('/users', async (req, res) => {
       const user = req.body;
       const result = await userCollection.insertOne(user);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     app.get('/allEmployee', async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
-    })
+    });
 
     app.get('/allEmployee/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.findOne(query);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     app.get('/allEmployees/:email', async (req, res) => {
       const email = req.params.email;
@@ -59,24 +54,46 @@ async function run() {
       res.send(result);
     });
 
+    app.patch('/allEmployeeUp/:email', async (req, res) => {
+      const { email } = req.params;
+      const { verified } = req.body;
+      const filter = { email: email };
+      const updateDoc = {
+        $set: { verified }
+      };
+      try {
+        const result = await userCollection.updateOne(filter, updateDoc);
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ error: 'User not found' });
+        }
+        if (result.modifiedCount === 0) {
+          return res.status(400).send({ message: 'No changes made to the user' });
+        }
+        res.send({ message: 'User updated successfully', result });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ error: 'Failed to update user' });
+      }
+    });
 
-    //  service Related api
+    // Service related API
     app.get('/services', async (req, res) => {
       const result = await serviceCollection.find().toArray();
-      res.send(result)
-    })
+      res.send(result);
+    });
 
-
-    //  Dashboard related api
+    // Dashboard related API
     app.post('/workSheet', async (req, res) => {
       const data = req.body;
       const result = await workSheetCollection.insertOne(data);
-      res.send(result)
-    })
+      res.send(result);
+    });
+
     app.get('/workSheet', async (req, res) => {
       const result = await workSheetCollection.find().toArray();
-      res.send(result)
-    })
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -87,20 +104,10 @@ async function run() {
 }
 run().catch(console.dir);
 
-
-
-
-
-
-
-
-
-
-
 app.get('/', (req, res) => {
   res.send('Machine world is Running');
-})
+});
 
 app.listen(port, () => {
-  console.log(`Machine World server is Running on Port ${port}`)
-})
+  console.log(`Machine World server is Running on Port ${port}`);
+});
