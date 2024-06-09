@@ -22,14 +22,13 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
+    // Connect the client to the server
     await client.connect();
 
     const userCollection = client.db("machineDb").collection("users");
     const serviceCollection = client.db("machineDb").collection("services");
     const workSheetCollection = client.db("machineDb").collection("WorkSheet");
     const messageCollection = client.db("machineDb").collection("messageCollection");
-
 
     // Users related API
     app.post('/users', async (req, res) => {
@@ -38,20 +37,13 @@ async function run() {
       res.send(result);
     });
 
+    // Message Related API Start's Here
     app.get('/message', async (req, res) => {
       const result = await messageCollection.find().toArray();
       res.send(result);
     });
 
-    //! Message Related APi Start's Here
-
     app.post('/message', async (req, res) => {
-      const data = req.body;
-      const result = await messageCollection.insertOne(data);
-      res.send(result);
-    });
-
-    app.get('/message', async (req, res) => {
       const data = req.body;
       const result = await messageCollection.insertOne(data);
       res.send(result);
@@ -71,9 +63,13 @@ async function run() {
         res.status(500).send({ error: 'Failed to delete message' });
       }
     });
+    // Message Related API End's Here
 
-    //! Message Related Api End's Here
-
+    // Employee Related API
+    app.get('/allEmployee', async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
 
     app.get('/allEmployee/:id', async (req, res) => {
       const id = req.params.id;
@@ -90,10 +86,52 @@ async function run() {
 
     app.patch('/allEmployeeUp/:email', async (req, res) => {
       const { email } = req.params;
-      const { verified, role } = req.body;
+      const { role } = req.body;
       const filter = { email: email };
       const updateDoc = {
-        $set: { verified, role }
+        $set: { role }
+      };
+      try {
+        const result = await userCollection.updateOne(filter, updateDoc);
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ error: 'User not found' });
+        }
+        if (result.modifiedCount === 0) {
+          return res.status(400).send({ message: 'No changes made to the user' });
+        }
+        res.send({ message: 'User updated successfully', result });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ error: 'Failed to update user' });
+      }
+    });
+    app.patch('/updateProfile/:email', async (req, res) => {
+      const { email } = req.params;
+      const { image } = req.body;
+      const filter = { email: email };
+      const updateDoc = {
+        $set: { image }
+      };
+      try {
+        const result = await userCollection.updateOne(filter, updateDoc);
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ error: 'User not found' });
+        }
+        if (result.modifiedCount === 0) {
+          return res.status(400).send({ message: 'No changes made to the user' });
+        }
+        res.send({ message: 'User updated successfully', result });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ error: 'Failed to update user' });
+      }
+    });
+    app.patch('/allEmployeesPhoto/:email', async (req, res) => {
+      const { email } = req.params;
+      const { verified } = req.body;
+      const filter = { email: email };
+      const updateDoc = {
+        $set: { image }
       };
       try {
         const result = await userCollection.updateOne(filter, updateDoc);
