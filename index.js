@@ -4,7 +4,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
-
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // middleware
 app.use(cors());
 app.use(express.json());
@@ -29,6 +29,7 @@ async function run() {
     const serviceCollection = client.db("machineDb").collection("services");
     const workSheetCollection = client.db("machineDb").collection("WorkSheet");
     const messageCollection = client.db("machineDb").collection("messageCollection");
+    const paymentCollection = client.db("machineDb").collection("payment");
 
     // Users related API
     app.post('/users', async (req, res) => {
@@ -105,6 +106,7 @@ async function run() {
         res.status(500).send({ error: 'Failed to update user' });
       }
     });
+
     app.patch('/updateProfile/:email', async (req, res) => {
       const { email } = req.params;
       const { image } = req.body;
@@ -126,12 +128,12 @@ async function run() {
         res.status(500).send({ error: 'Failed to update user' });
       }
     });
-    app.patch('/allEmployeesPhoto/:email', async (req, res) => {
+
+    app.patch('/verifyEmployee/:email', async (req, res) => {
       const { email } = req.params;
-      const { verified } = req.body;
       const filter = { email: email };
       const updateDoc = {
-        $set: { image }
+        $set: { verified: true }
       };
       try {
         const result = await userCollection.updateOne(filter, updateDoc);
@@ -141,10 +143,10 @@ async function run() {
         if (result.modifiedCount === 0) {
           return res.status(400).send({ message: 'No changes made to the user' });
         }
-        res.send({ message: 'User updated successfully', result });
+        res.send({ message: 'Employee verified successfully', result });
       } catch (error) {
         console.error(error);
-        res.status(500).send({ error: 'Failed to update user' });
+        res.status(500).send({ error: 'Failed to verify employee' });
       }
     });
 
@@ -164,6 +166,30 @@ async function run() {
     app.get('/workSheet', async (req, res) => {
       const result = await workSheetCollection.find().toArray();
       res.send(result);
+    });
+
+    // Payment Related API'S
+
+    app.post('/create-payment', async (req, res) => {
+      const { price } = req.body;
+      const amount = Math.round(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'usd',
+        payment_method_types: ['card'],
+      });
+      res.send({ clientSecret: paymentIntent.client_secret });
+    });
+
+    app.get('/payments', async (req, res) => {
+      const pay = await paymentCollection.find().toArray();
+      res.send(pay);
+    });
+
+    app.post('/payments', async (req, res) => {
+      const payment = req.body;
+      const result = await paymentCollection.insertOne(payment);
+      res.send({ result });
     });
 
     // Send a ping to confirm a successful connection
