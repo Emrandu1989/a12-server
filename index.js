@@ -170,6 +170,14 @@ async function run() {
 
     // Payment Related API'S
 
+    app.get('/payments/:email', async (req, res) => {
+      const email = req.params.email;
+      const result = await paymentCollection.find({ email }).toArray();
+      res.send(result);
+    });
+
+
+
     app.post('/create-payment', async (req, res) => {
       const { price } = req.body;
       const amount = Math.round(price * 100);
