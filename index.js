@@ -5,13 +5,19 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-// middleware
-app.use(cors());
+
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://machine-world.netlify.app",
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ff4sini.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -22,7 +28,6 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server
     await client.connect();
 
     const userCollection = client.db("machineDb").collection("users");
@@ -31,68 +36,88 @@ async function run() {
     const messageCollection = client.db("machineDb").collection("messageCollection");
     const paymentCollection = client.db("machineDb").collection("payment");
 
-    // Users related API
     app.post('/users', async (req, res) => {
-      const user = req.body;
-      const result = await userCollection.insertOne(user);
-      res.send(result);
+      try {
+        const user = req.body;
+        const result = await userCollection.insertOne(user);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to add user' });
+      }
     });
 
-    // Message Related API Start's Here
     app.get('/message', async (req, res) => {
-      const result = await messageCollection.find().toArray();
-      res.send(result);
+      try {
+        const result = await messageCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to fetch messages' });
+      }
     });
 
     app.post('/message', async (req, res) => {
-      const data = req.body;
-      const result = await messageCollection.insertOne(data);
-      res.send(result);
+      try {
+        const data = req.body;
+        const result = await messageCollection.insertOne(data);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to add message' });
+      }
     });
 
     app.delete('/message/:id', async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
       try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
         const result = await messageCollection.deleteOne(query);
         if (result.deletedCount === 0) {
           return res.status(404).send({ error: 'Message not found' });
         }
         res.send({ message: 'Message deleted successfully' });
       } catch (error) {
-        console.error(error);
         res.status(500).send({ error: 'Failed to delete message' });
       }
     });
-    // Message Related API End's Here
 
-    // Employee Related API
     app.get('/allEmployee', async (req, res) => {
-      const result = await userCollection.find().toArray();
-      res.send(result);
+      try {
+        const result = await userCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to fetch employees' });
+      }
     });
 
     app.get('/allEmployee/:id', async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await userCollection.findOne(query);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await userCollection.findOne(query);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to fetch employee' });
+      }
     });
 
     app.get('/allEmployees/:email', async (req, res) => {
-      const email = req.params.email;
-      const result = await userCollection.findOne({ email });
-      res.send(result);
+      try {
+        const email = req.params.email;
+        const result = await userCollection.find({ email:req.params.email }).toArray();
+        console.log(result)
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to fetch employee' });
+      }
     });
 
     app.patch('/allEmployeeUp/:email', async (req, res) => {
-      const { email } = req.params;
-      const { role } = req.body;
-      const filter = { email: email };
-      const updateDoc = {
-        $set: { role }
-      };
       try {
+        const { email } = req.params;
+        const { role } = req.body;
+        const filter = { email: email };
+        const updateDoc = {
+          $set: { role }
+        };
         const result = await userCollection.updateOne(filter, updateDoc);
         if (result.matchedCount === 0) {
           return res.status(404).send({ error: 'User not found' });
@@ -102,19 +127,18 @@ async function run() {
         }
         res.send({ message: 'User updated successfully', result });
       } catch (error) {
-        console.error(error);
         res.status(500).send({ error: 'Failed to update user' });
       }
     });
 
     app.patch('/updateProfile/:email', async (req, res) => {
-      const { email } = req.params;
-      const { image } = req.body;
-      const filter = { email: email };
-      const updateDoc = {
-        $set: { image }
-      };
       try {
+        const { email } = req.params;
+        const { image } = req.body;
+        const filter = { email: email };
+        const updateDoc = {
+          $set: { image }
+        };
         const result = await userCollection.updateOne(filter, updateDoc);
         if (result.matchedCount === 0) {
           return res.status(404).send({ error: 'User not found' });
@@ -124,18 +148,17 @@ async function run() {
         }
         res.send({ message: 'User updated successfully', result });
       } catch (error) {
-        console.error(error);
         res.status(500).send({ error: 'Failed to update user' });
       }
     });
 
     app.patch('/verifyEmployee/:email', async (req, res) => {
-      const { email } = req.params;
-      const filter = { email: email };
-      const updateDoc = {
-        $set: { verified: true }
-      };
       try {
+        const { email } = req.params;
+        const filter = { email: email };
+        const updateDoc = {
+          $set: { verified: true }
+        };
         const result = await userCollection.updateOne(filter, updateDoc);
         if (result.matchedCount === 0) {
           return res.status(404).send({ error: 'User not found' });
@@ -145,69 +168,92 @@ async function run() {
         }
         res.send({ message: 'Employee verified successfully', result });
       } catch (error) {
-        console.error(error);
         res.status(500).send({ error: 'Failed to verify employee' });
       }
     });
 
-    // Service related API
     app.get('/services', async (req, res) => {
-      const result = await serviceCollection.find().toArray();
-      res.send(result);
+      try {
+        const result = await serviceCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to fetch services' });
+      }
     });
 
-    // Dashboard related API
     app.post('/workSheet', async (req, res) => {
-      const data = req.body;
-      const result = await workSheetCollection.insertOne(data);
-      res.send(result);
+      try {
+        const data = req.body;
+        const result = await workSheetCollection.insertOne(data);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to add worksheet' });
+      }
     });
 
     app.get('/workSheet', async (req, res) => {
-      const result = await workSheetCollection.find().toArray();
-      res.send(result);
+      try {
+        const result = await workSheetCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to fetch worksheets' });
+      }
     });
-
-    // Payment Related API'S
 
     app.get('/payments/:email', async (req, res) => {
-      const email = req.params.email;
-      const result = await paymentCollection.find({ email }).toArray();
-      res.send(result);
+      try {
+        const email = req.params.email;
+        console.log(email,"206")
+        const result = await paymentCollection.find({ email:req.params.email}).toArray();
+        console.log("207", result)
+        return res.send(result);
+        
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to fetch payments' });
+      }
     });
 
-
-
     app.post('/create-payment', async (req, res) => {
-      const { price } = req.body;
-      const amount = Math.round(price * 100);
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: 'usd',
-        payment_method_types: ['card'],
-      });
-      res.send({ clientSecret: paymentIntent.client_secret });
+      try {
+        const { price } = req.body;
+        const amount = Math.round(price * 100);
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount,
+          currency: 'usd',
+          payment_method_types: ['card'],
+        });
+        res.send({ clientSecret: paymentIntent.client_secret });
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to create payment intent' });
+      }
     });
 
     app.get('/payments', async (req, res) => {
-      const pay = await paymentCollection.find().toArray();
-      res.send(pay);
+      try {
+        const pay = await paymentCollection.find().toArray();
+        res.send(pay);
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to fetch payments' });
+      }
     });
 
     app.post('/payments', async (req, res) => {
-      const payment = req.body;
-      const result = await paymentCollection.insertOne(payment);
-      res.send({ result });
+      try {
+        const payment = req.body;
+        const result = await paymentCollection.insertOne(payment);
+        res.send({ result });
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to add payment' });
+      }
     });
 
-    // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
+  } catch (error) {
+    console.error("Failed to connect to MongoDB", error);
   }
 }
+
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
