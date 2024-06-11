@@ -5,7 +5,7 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
+const jwt = require('jsonwebtoken');
 app.use(cors({
   origin: [
     "http://localhost:5173",
@@ -35,6 +35,15 @@ async function run() {
     const workSheetCollection = client.db("machineDb").collection("WorkSheet");
     const messageCollection = client.db("machineDb").collection("messageCollection");
     const paymentCollection = client.db("machineDb").collection("payment");
+
+
+
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+      res.send({ token }); 
+    });
+
 
     app.post('/users', async (req, res) => {
       try {
@@ -102,7 +111,7 @@ async function run() {
     app.get('/allEmployees/:email', async (req, res) => {
       try {
         const email = req.params.email;
-        const result = await userCollection.find({ email:req.params.email }).toArray();
+        const result = await userCollection.find({ email: req.params.email }).toArray();
         console.log(result)
         res.send(result);
       } catch (error) {
@@ -117,6 +126,26 @@ async function run() {
         const filter = { email: email };
         const updateDoc = {
           $set: { role }
+        };
+        const result = await userCollection.updateOne(filter, updateDoc);
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ error: 'User not found' });
+        }
+        if (result.modifiedCount === 0) {
+          return res.status(400).send({ message: 'No changes made to the user' });
+        }
+        res.send({ message: 'User updated successfully', result });
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to update user' });
+      }
+    });
+    app.patch('/allEmployeeUpS/:email', async (req, res) => {
+      try {
+        const { email } = req.params;
+        const { salary } = req.body;
+        const filter = { email: email };
+        const updateDoc = {
+          $set: { salary }
         };
         const result = await userCollection.updateOne(filter, updateDoc);
         if (result.matchedCount === 0) {
@@ -203,11 +232,11 @@ async function run() {
     app.get('/payments/:email', async (req, res) => {
       try {
         const email = req.params.email;
-        console.log(email,"206")
-        const result = await paymentCollection.find({ email:req.params.email}).toArray();
+        console.log(email, "206")
+        const result = await paymentCollection.find({ email: req.params.email }).toArray();
         console.log("207", result)
         return res.send(result);
-        
+
       } catch (error) {
         res.status(500).send({ error: 'Failed to fetch payments' });
       }
